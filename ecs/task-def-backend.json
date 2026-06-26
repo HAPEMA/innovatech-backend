@@ -1,0 +1,83 @@
+{
+  "family": "innovatech-backend",
+  "taskRoleArn": "arn:aws:iam::881196376889:role/LabRole",
+  "executionRoleArn": "arn:aws:iam::881196376889:role/LabRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "volumes": [],
+  "containerDefinitions": [
+    {
+      "name": "mysql-despachos",
+      "image": "mysql:8.0",
+      "cpu": 0,
+      "portMappings": [
+        {
+          "containerPort": 3306,
+          "hostPort": 3306,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": false,
+      "environment": [
+        { "name": "MYSQL_DATABASE",      "value": "despachos_db"  },
+        { "name": "MYSQL_PASSWORD",      "value": "Despachos#2025" },
+        { "name": "MYSQL_ROOT_PASSWORD", "value": "root1234"       },
+        { "name": "MYSQL_USER",          "value": "despachos_user" }
+      ],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "mysqladmin ping -h localhost -u root --password=root1234 || exit 1"],
+        "interval": 10,
+        "timeout": 5,
+        "retries": 5,
+        "startPeriod": 30
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/innovatech_backend",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "mysql"
+        }
+      },
+      "systemControls": []
+    },
+    {
+      "name": "innovatech-backend",
+      "image": "881196376889.dkr.ecr.us-east-1.amazonaws.com/innovatech_backend:latest",
+      "cpu": 0,
+      "portMappings": [
+        {
+          "containerPort": 8081,
+          "hostPort": 8081,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        { "name": "SERVER_PORT",                    "value": "8081"           },
+        { "name": "SPRING_DATASOURCE_USERNAME",     "value": "despachos_user" },
+        { "name": "SPRING_DATASOURCE_URL",          "value": "jdbc:mysql://127.0.0.1:3306/despachos_db?allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true" },
+        { "name": "SPRING_DATASOURCE_PASSWORD",     "value": "Despachos#2025" },
+        { "name": "SPRING_JPA_HIBERNATE_DDL_AUTO",  "value": "update"         }
+      ],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "dependsOn": [
+        { "containerName": "mysql-despachos", "condition": "HEALTHY" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/innovatech_backend",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "springboot"
+        }
+      },
+      "systemControls": []
+    }
+  ]
+}
